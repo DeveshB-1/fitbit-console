@@ -1,0 +1,8 @@
+client_secret*.json
+token.json
+.venv/
+__pycache__/
+profile.json
+_site/
+site_password.txt
+.omc/

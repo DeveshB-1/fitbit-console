@@ -1,0 +1,1144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fitbit Console</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface-1: #fcfcfb;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11,11,11,0.10);
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --critical: #d03b3b;
+  --heart: #e34948;
+  --good: #006300;
+  --wash: rgba(11,11,11,0.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface-1: #1a1a19;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255,255,255,0.10);
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --heart: #e66767;
+    --good: #0ca30c;
+    --wash: rgba(255,255,255,0.05);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface-1: #1a1a19;
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --border: rgba(255,255,255,0.10);
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --heart: #e66767;
+  --good: #0ca30c;
+  --wash: rgba(255,255,255,0.05);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--page); color: var(--text-primary);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.wrap { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
+header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+h1 { font-size: 20px; margin: 0; font-weight: 650; letter-spacing: -0.01em; }
+.sub { color: var(--text-secondary); font-size: 13px; }
+.badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-secondary); margin-left: 8px; vertical-align: 2px; }
+[hidden] { display: none !important; }
+.controls { display: flex; gap: 8px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface-1); }
+.seg button, .btn {
+  font: inherit; font-size: 13px; color: var(--text-secondary); background: transparent; border: 0;
+  padding: 6px 12px; cursor: pointer;
+}
+.seg button[aria-pressed="true"] { color: var(--text-primary); font-weight: 650; background: var(--wash); }
+.btn { border: 1px solid var(--border); border-radius: 8px; background: var(--surface-1); }
+.seg button:hover, .btn:hover { background: var(--wash); }
+.banner { border: 1px solid var(--border); border-left: 3px solid var(--critical); background: var(--surface-1); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; color: var(--text-secondary); font-size: 13px; }
+.banner strong { color: var(--text-primary); }
+.banner code { font-size: 12px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.tile, .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; }
+.tile { padding: 14px 16px; }
+.tile .k { color: var(--text-secondary); font-size: 12px; }
+.tile .v { font-size: 28px; font-weight: 650; letter-spacing: -0.02em; margin-top: 2px; }
+.tile .v small { font-size: 14px; font-weight: 500; color: var(--text-secondary); margin-left: 2px; }
+.tile .d { color: var(--text-muted); font-size: 12px; margin-top: 2px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); gap: 12px; }
+.card { padding: 14px 16px 10px; min-width: 0; }
+.card h2 { font-size: 14px; margin: 0; font-weight: 650; }
+.card .meta { color: var(--text-secondary); font-size: 12px; margin-bottom: 8px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--text-secondary); margin: 0 0 6px; padding: 0; list-style: none; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.chart { position: relative; }
+.chart svg { display: block; width: 100%; overflow: visible; }
+.chart text { fill: var(--text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.chart .lbl { fill: var(--text-secondary); font-weight: 600; }
+.empty { color: var(--text-muted); font-size: 13px; padding: 40px 0; text-align: center; }
+.tip {
+  position: absolute; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 10px; font-size: 12px; white-space: nowrap; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  opacity: 0; transition: opacity .08s; z-index: 2;
+}
+.tip b { display: block; color: var(--text-primary); margin-bottom: 2px; }
+.tip div { color: var(--text-secondary); }
+.tip i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+details { margin-top: 6px; }
+summary { cursor: pointer; color: var(--text-muted); font-size: 12px; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--grid); }
+th:first-child, td:first-child { text-align: left; }
+th { color: var(--text-secondary); font-weight: 600; }
+.tablewrap { max-height: 260px; overflow: auto; }
+.wide { grid-column: 1 / -1; }
+.skeleton { opacity: .5; }
+.gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--page); padding: 16px; }
+.gate form { width: min(360px, 100%); background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 24px; }
+.gate h1 { margin-bottom: 4px; }
+.gate p { color: var(--text-secondary); font-size: 13px; margin: 0 0 16px; }
+.gate input { width: 100%; font: inherit; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--page); color: var(--text-primary); }
+.gate button { margin-top: 10px; width: 100%; font: inherit; font-weight: 600; padding: 9px; border: 0; border-radius: 8px; background: var(--series-1); color: #fff; cursor: pointer; }
+.gate .err { color: var(--critical); font-size: 12px; min-height: 18px; margin-top: 8px; }
+.art-wrap { position: relative; border-radius: 10px; overflow: hidden; background: #07070b; }
+.art-wrap canvas { display: block; width: 100%; }
+.art-cap { color: var(--text-muted); font-size: 12px; margin-top: 8px; }
+.art-tools { display: flex; gap: 8px; align-items: center; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.fact { background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+.fact .big { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+.fact .em { font-size: 20px; margin-right: 6px; }
+.fact .how { color: var(--text-muted); font-size: 11px; margin-top: 4px; }
+.fact .txt { color: var(--text-secondary); font-size: 12.5px; margin-top: 2px; }
+.play-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.play-row select { font: inherit; font-size: 13px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); }
+.prog { height: 6px; border-radius: 3px; background: var(--grid); overflow: hidden; flex: 1 1 160px; }
+.prog i { display: block; height: 100%; width: 0; background: var(--heart); }
+.game input[type=range] { width: 100%; accent-color: var(--heart); }
+.game .q { font-size: 15px; font-weight: 600; margin: 4px 0 10px; }
+.game .ans { font-size: 13px; color: var(--text-secondary); min-height: 20px; margin-top: 8px; }
+.ins-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 28px 0 10px; flex-wrap: wrap; }
+.ins-head h2 { font-size: 17px; margin: 0; }
+.ins-head p { margin: 0; color: var(--text-muted); font-size: 12px; }
+.mrow { display: grid; grid-template-columns: 1fr auto; gap: 2px 16px; padding: 10px 0; border-top: 1px solid var(--grid); }
+.mrow:first-of-type { border-top: 0; }
+.mname { font-weight: 600; font-size: 13px; }
+.mval { font-size: 20px; font-weight: 650; text-align: right; white-space: nowrap; letter-spacing: -0.01em; }
+.mval small { font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-left: 3px; }
+.mdetail { grid-column: 1 / -1; color: var(--text-secondary); font-size: 12px; }
+.mformula { grid-column: 1 / -1; font: 11.5px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text-secondary); }
+.msource { color: var(--text-muted); font-family: system-ui, sans-serif; }
+.mflag { font-size: 11px; font-weight: 600; color: var(--critical); margin-left: 6px; }
+.mrow.missing .mval { color: var(--text-muted); }
+.corr-bar { width: 140px; }
+.subhead { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin: 14px 0 4px; }
+.live { display: grid; grid-template-columns: 240px 1fr; gap: 8px 24px; align-items: center; margin-bottom: 16px; padding: 16px; }
+@media (max-width: 680px) { .live { grid-template-columns: 1fr; } }
+.live-head { display: flex; align-items: center; gap: 10px; }
+.live-head h2 { margin: 0; }
+.bpm-row { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.bpm { font-size: 56px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+.bpm small { font-size: 16px; font-weight: 500; color: var(--text-secondary); margin-left: 4px; letter-spacing: 0; }
+.heart { width: 34px; height: 34px; fill: var(--heart); flex: none; transform-origin: center; animation: beat var(--beat, 0.8s) ease-in-out infinite; }
+.heart.stale { animation: none; opacity: .55; }
+@keyframes beat { 0%, 100% { transform: scale(1); } 12% { transform: scale(1.2); } 24% { transform: scale(1); } 36% { transform: scale(1.1); } 48% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .heart { animation: none; } }
+.pill { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px; }
+.pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); }
+.pill.fresh { color: var(--good); }
+.pill.fresh i { background: var(--good); }
+.live-meta { color: var(--text-secondary); font-size: 12px; margin-top: 8px; }
+.live-stats { display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: var(--text-secondary); }
+.live-stats b { display: block; font-size: 16px; color: var(--text-primary); }
+</style>
+</head>
+<body>
+<div class="gate" id="gate" hidden>
+  <form id="gate-form">
+    <h1>Fitbit Console</h1>
+    <p>This dashboard is encrypted. Enter the password to unlock it in your browser.</p>
+    <input type="password" id="gate-pw" autocomplete="current-password" placeholder="Password" aria-label="Password" required>
+    <button type="submit" id="gate-btn">Unlock</button>
+    <div class="err" id="gate-err" role="alert"></div>
+  </form>
+</div>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Fitbit Console <span id="badge" class="badge" hidden>Demo data</span></h1>
+      <div class="sub" id="rangeText">Loading…</div>
+    </div>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Date range">
+        <button data-days="7">7d</button>
+        <button data-days="30">30d</button>
+        <button data-days="90">90d</button>
+      </div>
+      <button class="btn" id="refresh" title="Re-fetch from the API">Refresh</button>
+      <button class="btn" id="theme" title="Toggle theme">Theme</button>
+    </div>
+  </header>
+
+  <div id="banner"></div>
+  <section class="card live" id="live" aria-live="polite">
+    <div>
+      <div class="live-head"><h2>Heart rate</h2><span class="pill" id="live-pill"><i></i><span>Loading</span></span></div>
+      <div class="bpm-row">
+        <svg class="heart stale" id="heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.6 1.1 4.3 2.4h2c.7-1.3 2.2-2.4 4.3-2.4 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21z"/></svg>
+        <div class="bpm" id="bpm">—<small>bpm</small></div>
+      </div>
+      <div class="live-meta" id="live-meta">&nbsp;</div>
+      <div class="live-stats" id="live-stats"></div>
+    </div>
+    <div>
+      <div class="meta" style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 4px">
+        <span id="live-range">Last 3 hours</span>
+        <div class="seg" role="group" aria-label="Heart rate window">
+          <button data-hours="1">1h</button><button data-hours="3">3h</button><button data-hours="12">12h</button>
+        </div>
+      </div>
+      <div class="chart" id="hr-live"></div>
+    </div>
+  </section>
+  <section class="tiles" id="tiles"></section>
+
+  <section class="grid">
+    <article class="card"><h2>Steps</h2><div class="meta" id="steps-meta"></div><div class="chart" id="steps"></div><details><summary>Table</summary><div class="tablewrap" id="steps-table"></div></details></article>
+    <article class="card"><h2>Sleep stages</h2><div class="meta" id="sleep-meta"></div><div class="chart" id="sleep"></div><details><summary>Table</summary><div class="tablewrap" id="sleep-table"></div></details></article>
+    <article class="card"><h2>Resting heart rate</h2><div class="meta" id="rhr-meta"></div><div class="chart" id="rhr"></div><details><summary>Table</summary><div class="tablewrap" id="rhr-table"></div></details></article>
+    <article class="card"><h2>Active zone minutes</h2><div class="meta" id="azm-meta"></div><div class="chart" id="azm"></div><details><summary>Table</summary><div class="tablewrap" id="azm-table"></div></details></article>
+    <article class="card"><h2>Calories burned</h2><div class="meta" id="cal-meta"></div><div class="chart" id="cal"></div><details><summary>Table</summary><div class="tablewrap" id="cal-table"></div></details></article>
+    <article class="card"><h2>Weight</h2><div class="meta" id="weight-meta"></div><div class="chart" id="weight"></div><details><summary>Table</summary><div class="tablewrap" id="weight-table"></div></details></article>
+    <article class="card wide"><h2>Workouts</h2><div class="meta" id="ex-meta"></div><div class="tablewrap" id="exercise" style="max-height:none"></div></article>
+  </section>
+
+  <div class="ins-head">
+    <h2>Heartbeat art</h2>
+    <div class="art-tools">
+      <div class="seg" role="group" aria-label="Art style"><button data-art="pulsar">Pulsar</button><button data-art="halo">Halo</button></div>
+      <button class="btn" id="art-save">Save PNG</button>
+    </div>
+  </div>
+  <section class="card" style="padding:12px">
+    <div class="art-wrap"><canvas id="art" role="img" aria-label="Generative art from your heart rate"></canvas></div>
+    <div class="art-cap" id="art-cap">Loading heart-rate history…</div>
+  </section>
+
+  <div class="ins-head">
+    <h2>Fun zone</h2>
+    <p>Real numbers from your data, with a little physics on top.</p>
+  </div>
+  <section class="grid" style="margin-bottom:4px">
+    <article class="card wide"><h2>Fun facts</h2><div class="meta">From the last 7 days of minute-by-minute heart rate and the selected range of activity.</div><div class="facts" id="facts"><div class="empty">Waiting for data…</div></div></article>
+    <article class="card"><h2>Play my heartbeat</h2>
+      <div class="meta">Your day as music: each note is 10 minutes, pitch follows your heart rate, and the thump keeps time.</div>
+      <div class="play-row">
+        <select id="play-day" aria-label="Day to play"></select>
+        <button class="btn" id="play-btn">▶ Play day</button>
+        <button class="btn" id="beat-btn">♥ Hear my pulse</button>
+      </div>
+      <div class="play-row"><div class="prog"><i id="play-prog"></i></div><span class="msource" id="play-now">—</span></div>
+    </article>
+    <article class="card game"><h2>Guess your heart rate</h2>
+      <div class="meta">A random minute from your week. How fast was your heart going?</div>
+      <div class="q" id="game-q">—</div>
+      <input type="range" id="game-guess" min="40" max="190" value="85" aria-label="Your guess in bpm">
+      <div class="play-row"><button class="btn" id="game-go">Guess <span id="game-val">85</span> bpm</button><button class="btn" id="game-next">New minute</button><span class="msource" id="game-score"></span></div>
+      <div class="ans" id="game-ans"></div>
+    </article>
+  </section>
+
+  <div class="ins-head">
+    <h2>Derived insights</h2>
+    <p id="ins-note">Calculated from your Fitbit data with published formulas. Estimates, not medical advice.</p>
+  </div>
+  <section class="grid" id="insights"><article class="card"><div class="empty">Calculating…</div></article></section>
+</div>
+
+<script>
+// ---- Data access: live API locally, encrypted snapshot on GitHub Pages ----
+const STATIC_FILE = window.FITBIT_STATIC || null;
+let snap = { data: null, key: null, at: 0, enc: null };
+
+const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+async function deriveKey(password, enc) {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt: b64(enc.salt), iterations: enc.iter },
+    base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+}
+async function decryptWith(key, enc) {
+  const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(enc.iv) }, key, b64(enc.ct));
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+async function fetchEnc() {
+  const res = await fetch(`${STATIC_FILE}?t=${Date.now()}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Snapshot not available (${res.status})`);
+  return res.json();
+}
+async function snapshotData() {
+  if (snap.data && Date.now() - snap.at < 10 * 60e3) return snap.data;
+  const enc = await fetchEnc();
+  if (!snap.enc || enc.salt !== snap.enc.salt) snap.key = null;   // a new build re-salts the key
+  if (!snap.key) {
+    const pw = (() => { try { return sessionStorage.getItem("fitbit.pw"); } catch { return null; } })();
+    if (!pw) throw new Error("locked");
+    snap.key = await deriveKey(pw, enc);
+  }
+  snap.data = await decryptWith(snap.key, enc);
+  snap.enc = enc; snap.at = Date.now();
+  return snap.data;
+}
+async function api(path, params = {}) {
+  if (!STATIC_FILE) {
+    const res = await fetch(`${path}?${new URLSearchParams(params)}`);
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || res.statusText);
+    return body;
+  }
+  const d = await snapshotData();
+  const pick = (obj, key, label) => { if (!obj[key]) throw new Error(`${label} not in snapshot`); return obj[key]; };
+  switch (path) {
+    case "/api/dashboard": return pick(d.dashboard, String(params.days), "Range");
+    case "/api/heartrate": return pick(d.heartrate, String(params.hours), "Window");
+    case "/api/insights": return pick(d.insights, String(params.days), "Insights range");
+    case "/api/heartart": return d.heartart;
+  }
+  throw new Error(`Unknown ${path}`);
+}
+async function unlock() {
+  const gate = document.getElementById("gate");
+  if (!STATIC_FILE) return;
+  try { await snapshotData(); return; } catch (e) { if (e.message !== "locked" && !(e instanceof DOMException)) { gate.hidden = false; document.getElementById("gate-err").textContent = e.message; } }
+  gate.hidden = false;
+  document.getElementById("gate-pw").focus();
+  await new Promise((resolve) => {
+    document.getElementById("gate-form").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const btn = document.getElementById("gate-btn"), err = document.getElementById("gate-err");
+      btn.disabled = true; btn.textContent = "Unlocking…"; err.textContent = "";
+      try {
+        const enc = await fetchEnc();
+        const key = await deriveKey(document.getElementById("gate-pw").value, enc);
+        snap.data = await decryptWith(key, enc);
+        snap.key = key; snap.enc = enc; snap.at = Date.now();
+        try { sessionStorage.setItem("fitbit.pw", document.getElementById("gate-pw").value); } catch {}
+        gate.hidden = true;
+        resolve();
+      } catch (e) {
+        err.textContent = e instanceof DOMException ? "Wrong password." : e.message;
+      } finally { btn.disabled = false; btn.textContent = "Unlock"; }
+    });
+  });
+}
+</script>
+<script>
+const NS = "http://www.w3.org/2000/svg";
+const $ = (id) => document.getElementById(id);
+const fmt = (v, d = 0) => v == null || Number.isNaN(v) ? "—" : Number(v).toLocaleString(undefined, { maximumFractionDigits: d, minimumFractionDigits: d });
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const dayLabel = (iso) => new Date(iso + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
+const hm = (min) => min == null ? "—" : `${Math.floor(min / 60)}h ${String(Math.round(min % 60)).padStart(2, "0")}m`;
+
+let state = { days: 30, data: null };
+try { state.days = Number(localStorage.getItem("fitbit.days")) || 30; } catch {}
+try { const t = localStorage.getItem("fitbit.theme"); if (t) document.documentElement.dataset.theme = t; } catch {}
+
+function el(tag, attrs = {}, parent) {
+  const n = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  if (parent) parent.appendChild(n);
+  return n;
+}
+
+function niceMax(v) {
+  if (!(v > 0)) return 1;
+  const p = 10 ** Math.floor(Math.log10(v));
+  for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= v) return m * p;
+}
+
+function ticks(min, max, n = 4) {
+  const step = niceMax((max - min) / n);
+  const lo = Math.floor(min / step) * step;
+  const out = [];
+  for (let t = lo; t <= max + step * 1e-9; t += step) out.push(+t.toFixed(10));
+  return out;
+}
+
+// Path for a column with a 4px rounded data-end and a square baseline.
+function colPath(x, y, w, h) {
+  const r = Math.min(4, w / 2, h);
+  return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
+}
+
+function makeTip(container) {
+  const tip = document.createElement("div");
+  tip.className = "tip";
+  container.appendChild(tip);
+  return {
+    show(html, x, y) {
+      tip.innerHTML = html;
+      tip.style.opacity = 1;
+      const cw = container.clientWidth, tw = tip.offsetWidth;
+      tip.style.left = Math.max(0, Math.min(cw - tw, x - tw / 2)) + "px";
+      tip.style.top = Math.max(-8, y - tip.offsetHeight - 10) + "px";
+    },
+    hide() { tip.style.opacity = 0; },
+  };
+}
+
+function frame(container, rows, yMin, yMax, yFmt) {
+  container.innerHTML = "";
+  const W = container.clientWidth || 500, H = 200;
+  const m = { t: 10, r: 8, b: 22, l: 44 };
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, height: H, role: "img" }, container);
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const ys = ticks(yMin, yMax);
+  const lo = ys[0], hi = ys[ys.length - 1];
+  const y = (v) => m.t + ih - ((v - lo) / (hi - lo || 1)) * ih;
+  for (const t of ys) {
+    el("line", { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), style: `stroke:var(${t === lo ? "--axis" : "--grid"})`, "stroke-width": 1, "shape-rendering": "crispEdges" }, svg);
+    el("text", { x: m.l - 8, y: y(t) + 4, "text-anchor": "end" }, svg).textContent = yFmt(t);
+  }
+  const band = iw / rows.length;
+  const xc = (i) => m.l + band * (i + 0.5);
+  const every = Math.ceil(rows.length / Math.max(2, Math.floor(iw / 70)));
+  rows.forEach((r, i) => {
+    if ((rows.length - 1 - i) % every === 0)
+      el("text", { x: xc(i), y: H - 6, "text-anchor": "middle" }, svg).textContent = dayLabel(r.date);
+  });
+  return { svg, W, H, m, iw, ih, y, band, xc, lo };
+}
+
+const tickFmt = (t) => fmt(t, Number.isInteger(t) ? 0 : 1);
+
+function empty(container, msg = "No data in this range") {
+  container.innerHTML = `<div class="empty">${msg}</div>`;
+}
+
+function legend(container, series) {
+  const ul = document.createElement("ul");
+  ul.className = "legend";
+  ul.innerHTML = series.map((s) => `<li><i style="background:var(${s.color})"></i>${esc(s.name)}</li>`).join("");
+  container.before(ul);
+  return ul;
+}
+
+// Columns; stacked when series.length > 1. series: [{key, name, color}]
+function columns(container, rows, series, { unit = "", digits = 0, refLine } = {}) {
+  container.previousElementSibling?.classList?.contains("legend") && container.previousElementSibling.remove();
+  const has = rows.some((r) => series.some((s) => r[s.key] != null));
+  if (!has) return empty(container);
+  if (series.length > 1) legend(container, series);
+  const total = (r) => series.reduce((a, s) => a + (r[s.key] || 0), 0);
+  const maxV = Math.max(...rows.map(total), refLine?.value || 0);
+  const f = frame(container, rows, 0, niceMax(maxV), tickFmt);
+  const w = Math.min(24, Math.max(2, f.band - 2));
+  const tip = makeTip(container);
+  rows.forEach((r, i) => {
+    let base = f.y(0);
+    const segs = series.filter((s) => r[s.key]);
+    segs.forEach((s, j) => {
+      const top = f.y(total({ ...Object.fromEntries(segs.slice(0, j + 1).map((x) => [x.key, r[x.key]])) }));
+      const gap = j > 0 ? 2 : 0;
+      const h = Math.max(0, base - top - gap);
+      const x = f.xc(i) - w / 2;
+      const isTop = j === segs.length - 1;
+      el("path", { d: isTop ? colPath(x, top, w, h) : `M${x},${top}h${w}v${h}h${-w}Z`, style: `fill:var(${s.color})` }, f.svg);
+      base = top;
+    });
+    const hit = el("rect", { x: f.xc(i) - f.band / 2, y: f.m.t, width: f.band, height: f.ih, fill: "transparent" }, f.svg);
+    hit.addEventListener("mouseenter", () => {
+      const lines = series.map((s) => `<div>${series.length > 1 ? `<i style="background:var(${s.color})"></i>` : ""}${esc(s.name)}: <b style="display:inline">${fmt(r[s.key], digits)}</b>${unit}</div>`).join("");
+      const tot = series.length > 1 ? `<div>Total: ${fmt(total(r), digits)}${unit}</div>` : "";
+      tip.show(`<b>${dayLabel(r.date)}</b>${lines}${tot}`, f.xc(i), f.y(total(r)));
+    });
+    hit.addEventListener("mouseleave", tip.hide);
+  });
+  if (refLine) {
+    const yy = f.y(refLine.value);
+    el("line", { x1: f.m.l, x2: f.W - f.m.r, y1: yy, y2: yy, style: "stroke:var(--text-muted)", "stroke-width": 1, "stroke-opacity": 0.6 }, f.svg).style.pointerEvents = "none";
+    const t = el("text", { x: f.W - f.m.r, y: yy - 5, "text-anchor": "end", class: "lbl" }, f.svg);
+    t.textContent = refLine.label;
+    t.style.pointerEvents = "none";
+  }
+}
+
+// Single-series line with dots, crosshair and tooltip. Gaps where value is null.
+function line(container, rows, key, { unit = "", digits = 0, color = "--series-1", pad = 0.1 } = {}) {
+  container.previousElementSibling?.classList?.contains("legend") && container.previousElementSibling.remove();
+  const pts = rows.map((r, i) => ({ i, r, v: r[key] })).filter((p) => p.v != null);
+  if (!pts.length) return empty(container);
+  let lo = Math.min(...pts.map((p) => p.v)), hi = Math.max(...pts.map((p) => p.v));
+  const span = hi - lo || Math.max(1, hi * 0.05);
+  const f = frame(container, rows, lo - span * pad, hi + span * pad, tickFmt);
+  const area = el("path", { style: `fill:var(${color})`, "fill-opacity": 0.1 }, f.svg);
+  const d = pts.map((p, k) => `${k ? "L" : "M"}${f.xc(p.i)},${f.y(p.v)}`).join("");
+  area.setAttribute("d", `${d}L${f.xc(pts.at(-1).i)},${f.y(f.lo)}L${f.xc(pts[0].i)},${f.y(f.lo)}Z`);
+  el("path", { d, fill: "none", style: `stroke:var(${color})`, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }, f.svg);
+  const sparse = pts.length <= 40;
+  if (sparse) for (const p of pts) el("circle", { cx: f.xc(p.i), cy: f.y(p.v), r: 4, style: `fill:var(${color});stroke:var(--surface-1)`, "stroke-width": 2 }, f.svg);
+  const last = pts.at(-1);
+  if (!sparse) el("circle", { cx: f.xc(last.i), cy: f.y(last.v), r: 4, style: `fill:var(${color});stroke:var(--surface-1)`, "stroke-width": 2 }, f.svg);
+  el("text", { x: Math.min(f.xc(last.i), f.W - f.m.r), y: f.y(last.v) - 10, "text-anchor": "end", class: "lbl" }, f.svg).textContent = fmt(last.v, digits) + unit;
+
+  const cross = el("line", { y1: f.m.t, y2: f.m.t + f.ih, style: "stroke:var(--axis)", "stroke-width": 1, opacity: 0 }, f.svg);
+  const dot = el("circle", { r: 5, style: `fill:var(${color});stroke:var(--surface-1)`, "stroke-width": 2, opacity: 0 }, f.svg);
+  const tip = makeTip(container);
+  const hit = el("rect", { x: f.m.l, y: f.m.t, width: f.iw, height: f.ih, fill: "transparent" }, f.svg);
+  hit.addEventListener("mousemove", (ev) => {
+    const box = f.svg.getBoundingClientRect();
+    const sx = (ev.clientX - box.left) * (f.W / box.width);
+    const p = pts.reduce((a, b) => Math.abs(f.xc(b.i) - sx) < Math.abs(f.xc(a.i) - sx) ? b : a);
+    const cx = f.xc(p.i), cy = f.y(p.v);
+    cross.setAttribute("x1", cx); cross.setAttribute("x2", cx); cross.setAttribute("opacity", 1);
+    dot.setAttribute("cx", cx); dot.setAttribute("cy", cy); dot.setAttribute("opacity", 1);
+    const scale = box.width / f.W;
+    tip.show(`<b>${dayLabel(p.r.date)}</b><div>${fmt(p.v, digits)}${unit}</div>`, cx * scale, cy * scale);
+  });
+  hit.addEventListener("mouseleave", () => { tip.hide(); cross.setAttribute("opacity", 0); dot.setAttribute("opacity", 0); });
+}
+
+function table(container, rows, cols) {
+  const body = rows.filter((r) => cols.slice(1).some((c) => r[c.key] != null)).slice().reverse();
+  if (!body.length) { container.innerHTML = `<div class="empty">No data</div>`; return; }
+  container.innerHTML = `<table><thead><tr>${cols.map((c) => `<th>${esc(c.name)}</th>`).join("")}</tr></thead><tbody>${
+    body.map((r) => `<tr>${cols.map((c) => `<td>${c.render ? c.render(r) : fmt(r[c.key], c.digits || 0)}</td>`).join("")}</tr>`).join("")
+  }</tbody></table>`;
+}
+
+const avg = (xs) => { const v = xs.filter((x) => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+const lastOf = (rows, key) => [...rows].reverse().find((r) => r[key] != null);
+
+function render() {
+  const data = state.data;
+  if (!data) return;
+  const days = data.days.map((d) => ({
+    ...d,
+    km: d.distanceMm != null ? d.distanceMm / 1e6 : null,
+    weightKg: d.weightGrams != null ? d.weightGrams / 1000 : null,
+    azmTotal: d.azmFatBurn != null ? (d.azmFatBurn || 0) + (d.azmCardio || 0) + (d.azmPeak || 0) : null,
+  }));
+  const sleepByDay = Object.fromEntries(data.days.map((d) => [d.date, { date: d.date }]));
+  for (const s of data.sleep) {
+    const row = sleepByDay[s.date];
+    if (!row) continue;
+    for (const k of ["DEEP", "LIGHT", "REM", "AWAKE"]) row[k] = (row[k] || 0) + (s.stages?.[k] || 0) || null;
+    row.asleep = (row.asleep || 0) + (s.asleepMin || 0);
+  }
+  const sleepRows = Object.values(sleepByDay).map((r) => ({ ...r, DEEP: r.DEEP && r.DEEP / 60, LIGHT: r.LIGHT && r.LIGHT / 60, REM: r.REM && r.REM / 60, AWAKE: r.AWAKE && r.AWAKE / 60 }));
+
+  $("badge").hidden = !data.demo;
+  $("rangeText").textContent = `${dayLabel(data.range.start)} – ${dayLabel(data.range.end)} · ${data.range.days} days`;
+  document.querySelectorAll(".seg button[data-days]").forEach((b) => b.setAttribute("aria-pressed", Number(b.dataset.days) === state.days));
+
+  const errs = Object.entries(data.errors || {});
+  $("banner").innerHTML = errs.length ? `<div class="banner"><strong>Some data could not be loaded:</strong><br>${errs.map(([k, v]) => `<code>${esc(k)}</code>: ${esc(v.slice(0, 220))}`).join("<br>")}</div>` : "";
+
+  const today = days.at(-1);
+  const stepsAvg = avg(days.map((d) => d.steps));
+  const rhr = lastOf(days, "restingHr");
+  const lastSleep = data.sleep.at(-1);
+  const w = lastOf(days, "weightKg");
+  const firstW = days.find((d) => d.weightKg != null);
+  const week = days.slice(-7);
+  const tiles = [
+    ["Steps today", fmt(today?.steps), "", `${fmt(stepsAvg)} avg/day`],
+    ["Resting heart rate", fmt(rhr?.restingHr), "bpm", rhr ? dayLabel(rhr.date) : "no data"],
+    ["Last sleep", lastSleep ? hm(lastSleep.asleepMin) : "—", "", lastSleep ? `${hm(lastSleep.awakeMin)} awake` : "no data"],
+    ["Active zone min (7d)", fmt(week.reduce((a, d) => a + (d.azmTotal || 0), 0)), "", "goal 150/wk"],
+    ["Weight", fmt(w?.weightKg, 1), "kg", w && firstW && w !== firstW ? `${w.weightKg - firstW.weightKg >= 0 ? "+" : "−"}${fmt(Math.abs(w.weightKg - firstW.weightKg), 1)} kg in range` : "no change data"],
+    ["Distance (range)", fmt(days.reduce((a, d) => a + (d.km || 0), 0), 1), "km", `${fmt(avg(days.map((d) => d.km)), 1)} km/day`],
+  ];
+  $("tiles").innerHTML = tiles.map(([k, v, u, d]) => `<div class="tile"><div class="k">${k}</div><div class="v">${v}${u && v !== "—" ? `<small>${u}</small>` : ""}</div><div class="d">${d}</div></div>`).join("");
+
+  $("steps-meta").textContent = `Daily total · ${fmt(stepsAvg)} average`;
+  columns($("steps"), days, [{ key: "steps", name: "Steps", color: "--series-1" }], { refLine: { value: 10000, label: "10k goal" } });
+  table($("steps-table"), days, [{ key: "date", name: "Date", render: (r) => dayLabel(r.date) }, { key: "steps", name: "Steps" }, { key: "km", name: "km", digits: 2 }]);
+
+  $("sleep-meta").textContent = `Hours per night · ${hm(avg(data.sleep.map((s) => s.asleepMin)))} asleep on average`;
+  const stageSeries = [{ key: "DEEP", name: "Deep", color: "--series-1" }, { key: "LIGHT", name: "Light", color: "--series-2" }, { key: "REM", name: "REM", color: "--series-3" }, { key: "AWAKE", name: "Awake", color: "--series-4" }];
+  columns($("sleep"), sleepRows, stageSeries, { unit: " h", digits: 1 });
+  table($("sleep-table"), sleepRows, [{ key: "date", name: "Night ending", render: (r) => dayLabel(r.date) }, ...stageSeries.map((s) => ({ key: s.key, name: s.name + " (h)", digits: 1 }))]);
+
+  $("rhr-meta").textContent = `Beats per minute · ${fmt(avg(days.map((d) => d.restingHr)), 1)} average`;
+  line($("rhr"), days, "restingHr", { unit: " bpm" });
+  table($("rhr-table"), days, [{ key: "date", name: "Date", render: (r) => dayLabel(r.date) }, { key: "restingHr", name: "Resting" }, { key: "hrMin", name: "Min" }, { key: "hrAvg", name: "Avg", digits: 1 }, { key: "hrMax", name: "Max" }]);
+
+  const azmSeries = [{ key: "azmFatBurn", name: "Fat burn", color: "--series-1" }, { key: "azmCardio", name: "Cardio", color: "--series-2" }, { key: "azmPeak", name: "Peak", color: "--series-3" }];
+  $("azm-meta").textContent = `Minutes per day by heart-rate zone · ${fmt(avg(days.map((d) => d.azmTotal)))} average`;
+  columns($("azm"), days, azmSeries, { unit: " min" });
+  table($("azm-table"), days, [{ key: "date", name: "Date", render: (r) => dayLabel(r.date) }, ...azmSeries.map((s) => ({ key: s.key, name: s.name })), { key: "azmTotal", name: "Total" }]);
+
+  $("cal-meta").textContent = `Total kcal per day · ${fmt(avg(days.map((d) => d.calories)))} average`;
+  columns($("cal"), days, [{ key: "calories", name: "Calories", color: "--series-1" }], { unit: " kcal" });
+  table($("cal-table"), days, [{ key: "date", name: "Date", render: (r) => dayLabel(r.date) }, { key: "calories", name: "kcal" }]);
+
+  $("weight-meta").textContent = "Daily average, kg";
+  line($("weight"), days, "weightKg", { unit: " kg", digits: 1, pad: 0.3 });
+  table($("weight-table"), days, [{ key: "date", name: "Date", render: (r) => dayLabel(r.date) }, { key: "weightKg", name: "kg", digits: 1 }]);
+
+  $("ex-meta").textContent = `${data.exercise.length} workouts · ${fmt(data.exercise.reduce((a, e) => a + (e.durationMin || 0), 0))} active minutes`;
+  if (!data.exercise.length) { $("exercise").innerHTML = `<div class="empty">No workouts in this range</div>`; }
+  else $("exercise").innerHTML = `<table><thead><tr><th>Workout</th><th>When</th><th>Duration</th><th>Distance</th><th>Calories</th><th>Avg HR</th><th>AZM</th></tr></thead><tbody>${
+    data.exercise.map((e) => `<tr><td>${esc(e.name)}</td><td>${e.start ? new Date(e.start).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "—"}</td><td>${hm(e.durationMin)}</td><td>${e.distanceMm ? fmt(e.distanceMm / 1e6, 2) + " km" : "—"}</td><td>${fmt(e.calories)}</td><td>${fmt(e.avgHr)}</td><td>${fmt(e.azm)}</td></tr>`).join("")
+  }</tbody></table>`;
+}
+
+async function load(refresh = false) {
+  document.body.classList.add("skeleton");
+  try {
+    state.data = await api("/api/dashboard", refresh ? { days: state.days, refresh: 1 } : { days: state.days });
+    render();
+    if (typeof renderFun === "function") renderFun();
+  } catch (e) {
+    $("banner").innerHTML = `<div class="banner"><strong>Could not load data.</strong> ${esc(e.message)}<br>Run <code>uv run main.py login</code>, or start with <code>--demo</code> to preview.</div>`;
+    $("rangeText").textContent = "Not connected";
+  } finally {
+    document.body.classList.remove("skeleton");
+  }
+}
+
+document.querySelectorAll(".seg button[data-days]").forEach((b) => b.addEventListener("click", () => {
+  state.days = Number(b.dataset.days);
+  try { localStorage.setItem("fitbit.days", state.days); } catch {}
+  load();
+  loadInsights();
+}));
+$("refresh").addEventListener("click", () => load(true));
+$("theme").addEventListener("click", () => {
+  const dark = getComputedStyle(document.documentElement).colorScheme === "dark";
+  document.documentElement.dataset.theme = dark ? "light" : "dark";
+  try { localStorage.setItem("fitbit.theme", document.documentElement.dataset.theme); } catch {}
+  render();
+  renderLive();
+  renderInsights();
+});
+let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(render, 120); });
+
+// ---- Live heart rate (latest synced samples, polled) ----
+const LIVE_POLL_MS = 30000;
+const FRESH_MIN = 15;
+let live = { hours: 3, data: null, timer: null };
+try { live.hours = Number(localStorage.getItem("fitbit.hrHours")) || 3; } catch {}
+
+const clock = (iso) => new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+function ago(iso) {
+  const m = Math.max(0, Math.round((Date.now() - new Date(iso)) / 60000));
+  if (m < 1) return "just now";
+  if (m < 60) return `${m} min ago`;
+  const h = Math.floor(m / 60);
+  return `${h}h ${m % 60}m ago`;
+}
+
+function timeLine(container, samples, hours) {
+  container.innerHTML = "";
+  if (!samples.length) return empty(container, "No heart-rate samples in this window");
+  const W = container.clientWidth || 600, H = 170;
+  const m = { t: 10, r: 8, b: 22, l: 40 };
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, height: H, role: "img", "aria-label": "Heart rate over time" }, container);
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const t1 = Date.now(), t0 = t1 - hours * 3600e3;
+  const vals = samples.map((s) => s.bpm);
+  const ys = ticks(Math.min(...vals) - 5, Math.max(...vals) + 5);
+  const lo = ys[0], hi = ys.at(-1);
+  const x = (t) => m.l + ((t - t0) / (t1 - t0)) * iw;
+  const y = (v) => m.t + ih - ((v - lo) / (hi - lo || 1)) * ih;
+  for (const t of ys) {
+    el("line", { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), style: `stroke:var(${t === lo ? "--axis" : "--grid"})`, "stroke-width": 1, "shape-rendering": "crispEdges" }, svg);
+    el("text", { x: m.l - 8, y: y(t) + 4, "text-anchor": "end" }, svg).textContent = tickFmt(t);
+  }
+  const stepMin = hours <= 1 ? 15 : hours <= 3 ? 30 : 120;
+  const first = Math.ceil(t0 / (stepMin * 60e3)) * stepMin * 60e3;
+  for (let t = first; t <= t1; t += stepMin * 60e3)
+    el("text", { x: x(t), y: H - 6, "text-anchor": "middle" }, svg).textContent = clock(t);
+
+  // Break the line where samples are more than 10 minutes apart (no data while not worn / not synced).
+  const pts = samples.map((s) => ({ ...s, ms: new Date(s.t).getTime() })).filter((p) => p.ms >= t0);
+  let d = "", prev = null;
+  for (const p of pts) { d += `${!prev || p.ms - prev.ms > 600e3 ? "M" : "L"}${x(p.ms).toFixed(1)},${y(p.bpm).toFixed(1)}`; prev = p; }
+  el("path", { d, fill: "none", style: "stroke:var(--heart)", "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+  const last = pts.at(-1);
+  if (last) {
+    el("circle", { cx: x(last.ms), cy: y(last.bpm), r: 4, style: "fill:var(--heart);stroke:var(--surface-1)", "stroke-width": 2 }, svg);
+    const lx = x(last.ms);
+    el("text", { x: lx > W - 60 ? lx - 8 : lx + 8, y: y(last.bpm) - 8, "text-anchor": lx > W - 60 ? "end" : "start", class: "lbl" }, svg).textContent = `${fmt(last.bpm)} bpm`;
+  }
+
+  const cross = el("line", { y1: m.t, y2: m.t + ih, style: "stroke:var(--axis)", "stroke-width": 1, opacity: 0 }, svg);
+  const dot = el("circle", { r: 5, style: "fill:var(--heart);stroke:var(--surface-1)", "stroke-width": 2, opacity: 0 }, svg);
+  const tip = makeTip(container);
+  const hit = el("rect", { x: m.l, y: m.t, width: iw, height: ih, fill: "transparent" }, svg);
+  hit.addEventListener("mousemove", (ev) => {
+    if (!pts.length) return;
+    const box = svg.getBoundingClientRect();
+    const sx = (ev.clientX - box.left) * (W / box.width);
+    const p = pts.reduce((a, b) => Math.abs(x(b.ms) - sx) < Math.abs(x(a.ms) - sx) ? b : a);
+    const cx = x(p.ms), cy = y(p.bpm), scale = box.width / W;
+    cross.setAttribute("x1", cx); cross.setAttribute("x2", cx); cross.setAttribute("opacity", 1);
+    dot.setAttribute("cx", cx); dot.setAttribute("cy", cy); dot.setAttribute("opacity", 1);
+    tip.show(`<b>${new Date(p.ms).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" })}</b><div>${fmt(p.bpm)} bpm</div>`, cx * scale, cy * scale);
+  });
+  hit.addEventListener("mouseleave", () => { tip.hide(); cross.setAttribute("opacity", 0); dot.setAttribute("opacity", 0); });
+}
+
+function renderLive() {
+  const d = live.data;
+  document.querySelectorAll(".seg button[data-hours]").forEach((b) => b.setAttribute("aria-pressed", Number(b.dataset.hours) === live.hours));
+  $("live-range").textContent = `Last ${live.hours} hour${live.hours > 1 ? "s" : ""}`;
+  if (!d) return;
+  const latest = d.latest;
+  const pill = $("live-pill"), heart = $("heart");
+  if (!latest) {
+    $("bpm").innerHTML = `—<small>bpm</small>`;
+    pill.className = "pill"; pill.lastElementChild.textContent = "No recent data";
+    heart.classList.add("stale");
+    $("live-meta").textContent = `No readings synced in the last ${live.hours}h. Open the Fitbit app on your phone to sync.`;
+    $("live-stats").innerHTML = "";
+  } else {
+    const ageMin = (Date.now() - new Date(latest.t)) / 60000;
+    const fresh = ageMin <= FRESH_MIN;
+    $("bpm").innerHTML = `${fmt(latest.bpm)}<small>bpm</small>`;
+    heart.style.setProperty("--beat", `${(60 / Math.max(30, latest.bpm)).toFixed(3)}s`);
+    heart.classList.toggle("stale", !fresh);
+    pill.className = fresh ? "pill fresh" : "pill";
+    pill.lastElementChild.textContent = fresh ? "Live" : "Waiting for sync";
+    $("live-meta").textContent = `Reading at ${clock(latest.t)} · ${ago(latest.t)}${fresh ? "" : " — open the Fitbit app to sync newer data"} · checked ${clock(d.fetchedAt)}`;
+    const v = d.samples.map((s) => s.bpm);
+    $("live-stats").innerHTML = [["Min", Math.min(...v)], ["Avg", v.reduce((a, b) => a + b, 0) / v.length], ["Max", Math.max(...v)]]
+      .map(([k, n]) => `<div>${k}<b>${fmt(n)}</b></div>`).join("");
+  }
+  timeLine($("hr-live"), d.samples, live.hours);
+}
+
+async function loadLive() {
+  clearTimeout(live.timer);
+  try {
+    live.data = await api("/api/heartrate", { hours: live.hours });
+    renderLive();
+  } catch (e) {
+    $("live-meta").textContent = `Could not load heart rate: ${e.message}`;
+  } finally {
+    if (!document.hidden) live.timer = setTimeout(loadLive, LIVE_POLL_MS);
+  }
+}
+
+document.querySelectorAll(".seg button[data-hours]").forEach((b) => b.addEventListener("click", () => {
+  live.hours = Number(b.dataset.hours);
+  try { localStorage.setItem("fitbit.hrHours", live.hours); } catch {}
+  renderLive();
+  loadLive();
+}));
+document.addEventListener("visibilitychange", () => { if (!document.hidden) loadLive(); else clearTimeout(live.timer); });
+setInterval(() => { if (live.data) renderLive(); }, 30000);
+window.addEventListener("resize", () => { clearTimeout(live.rt); live.rt = setTimeout(renderLive, 120); });
+
+// ---- Derived insights ----
+let ins = { data: null };
+
+function metricRow(m) {
+  const val = m.value == null ? "—" : fmt(m.value, m.digits);
+  const flag = m.status === "warn" ? `<span class="mflag">▲ Check</span>` : "";
+  return `<div class="mrow${m.status === "missing" ? " missing" : ""}">
+    <div class="mname">${esc(m.name)}${flag}</div>
+    <div class="mval">${val}${m.value != null && m.unit ? `<small>${esc(m.unit)}</small>` : ""}</div>
+    ${m.detail ? `<div class="mdetail">${esc(m.detail)}</div>` : ""}
+    ${m.formula || m.source ? `<div class="mformula">${esc(m.formula)}${m.source ? ` <span class="msource">· ${esc(m.source)}</span>` : ""}</div>` : ""}
+  </div>`;
+}
+
+function corrBar(c) {
+  if (c.r == null) return `<span class="msource">n=${c.n}, too few</span>`;
+  const W = 140, H = 18, x = (v) => 4 + ((v + 1) / 2) * (W - 8);
+  const col = c.significant ? "var(--series-1)" : "var(--text-muted)";
+  return `<svg class="corr-bar" viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="r ${c.r.toFixed(2)}, 95% CI ${c.ciLow.toFixed(2)} to ${c.ciHigh.toFixed(2)}">
+    <line x1="4" x2="${W - 4}" y1="9" y2="9" style="stroke:var(--grid)" stroke-width="1"/>
+    <line x1="${x(0)}" x2="${x(0)}" y1="3" y2="15" style="stroke:var(--axis)" stroke-width="1"/>
+    <line x1="${x(c.ciLow)}" x2="${x(c.ciHigh)}" y1="9" y2="9" style="stroke:${col}" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="${x(c.r)}" cy="9" r="4" style="fill:${col};stroke:var(--surface-1)" stroke-width="2"/></svg>`;
+}
+
+function renderInsights() {
+  const d = ins.data, root = $("insights");
+  if (!d) return;
+  const i = d.inputs;
+  $("ins-note").textContent = `Inputs: ${i.age ?? "?"} y, ${i.sex ?? "sex not set"}, ${i.heightCm ? fmt(i.heightCm) + " cm" : "no height"}, ${i.weightKg ? fmt(i.weightKg, 1) + " kg" : "no weight"} · ${i.days} complete days. ${d.disclaimer}`;
+  root.innerHTML = d.groups.map((g, gi) => {
+    let extra = "";
+    if (g.zones?.length) extra += `<div class="subhead">Karvonen training zones</div><table><thead><tr><th>Zone</th><th>% HRR</th><th>bpm</th></tr></thead><tbody>${
+      g.zones.map((z, k) => `<tr><td>${esc(z.zone)}</td><td>${50 + k * 10}–${60 + k * 10}%</td><td>${z.lo}–${z.hi}</td></tr>`).join("")}</tbody></table>`;
+    if (g.trimp?.length) extra += `<div class="subhead">Daily training load (TRIMP)</div><div class="chart" id="trimp-chart"></div>`;
+    if (g.correlations) extra += `<table><thead><tr><th>Relation</th><th>r</th><th>95% CI</th><th>n</th></tr></thead><tbody>${
+      g.correlations.map((c) => `<tr><td><div class="mname">${esc(c.name)}</div><div class="mdetail">${esc(c.why)}${c.r == null ? "" : ` <b>${c.significant ? (c.r > 0 ? "Significant positive" : "Significant negative") : "Not significant"}</b>`}</div></td>
+        <td>${c.r == null ? "—" : c.r.toFixed(2)}</td><td>${corrBar(c)}</td><td>${c.n}</td></tr>`).join("")}</tbody></table>`;
+    return `<article class="card${g.correlations ? " wide" : ""}"><h2>${esc(g.title)}</h2><div class="meta">${esc(g.subtitle)}</div>${g.metrics.map(metricRow).join("")}${extra}</article>`;
+  }).join("");
+  const heart = d.groups.find((g) => g.trimp?.length);
+  if (heart) columns($("trimp-chart"), heart.trimp, [{ key: "trimp", name: "TRIMP", color: "--series-2" }], { digits: 0 });
+}
+
+async function loadInsights() {
+  try {
+    ins.data = await api("/api/insights", { days: Math.max(state.days, 14) });
+    renderInsights();
+    renderFun();
+  } catch (e) {
+    $("insights").innerHTML = `<article class="card wide"><div class="empty">Insights unavailable: ${esc(e.message)}</div></article>`;
+  }
+}
+window.addEventListener("resize", () => { clearTimeout(ins.rt); ins.rt = setTimeout(renderInsights, 150); });
+
+// ---- Heartbeat art ----
+let art = { data: null, style: "pulsar" };
+try { art.style = localStorage.getItem("fitbit.art") || "pulsar"; } catch {}
+
+// Warm ramp: resting indigo -> magenta -> orange -> pale gold at peak.
+const ART_STOPS = [[0, [40, 30, 110]], [0.35, [150, 40, 150]], [0.6, [235, 70, 90]], [0.8, [255, 150, 60]], [1, [255, 236, 170]]];
+function artColor(t, a = 1) {
+  t = Math.max(0, Math.min(1, t));
+  for (let i = 1; i < ART_STOPS.length; i++) {
+    const [t1, c1] = ART_STOPS[i], [t0, c0] = ART_STOPS[i - 1];
+    if (t <= t1) {
+      const k = (t - t0) / (t1 - t0);
+      return `rgba(${c0.map((v, j) => Math.round(v + (c1[j] - v) * k)).join(",")},${a})`;
+    }
+  }
+}
+
+function artRange(days) {
+  const v = days.flatMap((d) => d.bpm.filter((x) => x != null)).sort((a, b) => a - b);
+  if (!v.length) return null;
+  return { lo: v[Math.floor(v.length * 0.02)], hi: v[Math.floor(v.length * 0.995)], n: v.length };
+}
+
+function drawPulsar(ctx, W, H, days, rg) {
+  const padX = W * 0.1, top = H * 0.24, bottom = H * 0.9;
+  const rows = days.length, gap = (bottom - top) / Math.max(rows - 1, 1), amp = gap * 2.6;
+  ctx.lineJoin = "round";
+  for (let r = 0; r < rows; r++) {
+    const d = days[r], base = top + r * gap;
+    // Smooth with a 9-minute moving average so the ridges read as terrain, not noise.
+    const sm = d.bpm.map((_, i) => { let s = 0, c = 0; for (let k = -4; k <= 4; k++) { const v = d.bpm[i + k]; if (v != null) { s += v; c++; } } return c ? s / c : null; });
+    const pts = sm.map((v, i) => [padX + (i / 1439) * (W - 2 * padX), v == null ? null : base - ((v - rg.lo) / (rg.hi - rg.lo)) * amp]);
+    // Occluding fill so nearer ridges hide farther ones.
+    ctx.beginPath(); ctx.moveTo(padX, base);
+    for (const [x, y] of pts) ctx.lineTo(x, y == null ? base : Math.min(base, y));
+    ctx.lineTo(W - padX, base); ctx.closePath();
+    ctx.fillStyle = "#07070b"; ctx.fill();
+    // Stroke in segments coloured by intensity.
+    ctx.lineWidth = Math.max(1.2, W / 700);
+    for (let i = 1; i < pts.length; i++) {
+      const [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
+      if (y0 == null || y1 == null) continue;
+      ctx.strokeStyle = artColor((sm[i] - rg.lo) / (rg.hi - rg.lo), 0.95);
+      ctx.beginPath(); ctx.moveTo(x0, Math.min(base, y0)); ctx.lineTo(x1, Math.min(base, y1)); ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(255,255,255,0.45)";
+    ctx.font = `${Math.max(10, W / 85)}px system-ui, sans-serif`;
+    ctx.textAlign = "right";
+    ctx.fillText(new Date(d.date + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric" }), padX - 10, base + 4);
+  }
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(255,255,255,0.35)";
+  for (const [h, lab] of [[0, "00:00"], [6, "06:00"], [12, "12:00"], [18, "18:00"], [24, "24:00"]])
+    ctx.fillText(lab, padX + (h / 24) * (W - 2 * padX), H * 0.96);
+}
+
+function drawHalo(ctx, W, H, days, rg) {
+  const cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.47, r0 = R * 0.28;
+  const ring = (R - r0) / days.length;
+  ctx.globalCompositeOperation = "lighter";
+  days.forEach((d, i) => {
+    const rIn = r0 + i * ring;
+    for (let m = 0; m < 1440; m++) {
+      const v = d.bpm[m];
+      if (v == null) continue;
+      const t = (v - rg.lo) / (rg.hi - rg.lo), a = (m / 1440) * Math.PI * 2 - Math.PI / 2;
+      const len = ring * (0.25 + 1.1 * Math.max(0, Math.min(1, t)));
+      ctx.strokeStyle = artColor(t, 0.18 + 0.5 * Math.max(0, Math.min(1, t)));
+      ctx.lineWidth = Math.max(1, W / 900);
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * rIn, cy + Math.sin(a) * rIn);
+      ctx.lineTo(cx + Math.cos(a) * (rIn + len), cy + Math.sin(a) * (rIn + len));
+      ctx.stroke();
+    }
+  });
+  ctx.globalCompositeOperation = "source-over";
+  ctx.fillStyle = "rgba(255,255,255,0.4)";
+  ctx.font = `${Math.max(10, W / 85)}px system-ui, sans-serif`;
+  ctx.textAlign = "center";
+  for (const [h, lab] of [[0, "00"], [6, "06"], [12, "12"], [18, "18"]]) {
+    const a = (h / 24) * Math.PI * 2 - Math.PI / 2;
+    ctx.fillText(lab, cx + Math.cos(a) * (R + 14), cy + Math.sin(a) * (R + 14) + 4);
+  }
+}
+
+function renderArt(pulse = 0) {
+  const c = $("art");
+  if (!art.data || !c) return;
+  document.querySelectorAll("[data-art]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.art === art.style));
+  const days = art.data.days.filter((d) => d.bpm.some((v) => v != null));
+  const rg = artRange(days);
+  const W = c.parentElement.clientWidth, H = art.style === "halo" ? Math.min(W, 640) : Math.min(W * 0.75, 560);
+  const dpr = window.devicePixelRatio || 1;
+  const sig = `${art.style}|${W}|${dpr}|${art.data.fetchedAt}`;
+  if (art.sig !== sig) {
+    // Draw the artwork once into an offscreen buffer; animation frames only blit it.
+    const buf = document.createElement("canvas");
+    buf.width = W * dpr; buf.height = H * dpr;
+    const b = buf.getContext("2d");
+    b.setTransform(dpr, 0, 0, dpr, 0, 0);
+    b.fillStyle = "#07070b"; b.fillRect(0, 0, W, H);
+    if (rg) (art.style === "halo" ? drawHalo : drawPulsar)(b, W, H, days, rg);
+    else { b.fillStyle = "#888"; b.textAlign = "center"; b.fillText("No heart-rate data yet", W / 2, H / 2); }
+    art.buf = buf; art.sig = sig;
+    c.width = W * dpr; c.height = H * dpr; c.style.height = H + "px";
+  }
+  const ctx = c.getContext("2d");
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(art.buf, 0, 0);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (!rg) return;
+
+  // Centre/heading: the latest reading, pulsing at its own rate.
+  const last = [...days].reverse().map((d) => [...d.bpm].reverse().find((v) => v != null)).find((v) => v != null);
+  const scale = 1 + 0.08 * Math.max(0, Math.sin(pulse * Math.PI)) ** 6;
+  ctx.save();
+  if (art.style === "halo") ctx.translate(W / 2, H / 2); else ctx.translate(W / 2, H * 0.075);
+  ctx.scale(scale, scale);
+  ctx.textAlign = "center";
+  ctx.fillStyle = art.style === "halo" ? artColor(Math.max(0.55, (last - rg.lo) / (rg.hi - rg.lo)), 1) : "rgba(255,255,255,0.9)";
+  ctx.font = `700 ${art.style === "halo" ? Math.max(28, W / 14) : Math.max(18, W / 32)}px system-ui, sans-serif`;
+  ctx.fillText(art.style === "halo" ? `${last}` : `♥ ${last} bpm`, 0, art.style === "halo" ? 0 : 8);
+  if (art.style === "halo") {
+    ctx.font = `${Math.max(11, W / 60)}px system-ui, sans-serif`;
+    ctx.fillStyle = "rgba(255,255,255,0.55)";
+    ctx.fillText("bpm", 0, Math.max(18, W / 34));
+  }
+  ctx.restore();
+  art.last = last;
+  $("art-cap").textContent = art.style === "halo"
+    ? `Each ring is a day (inside = oldest, outside = today), going clockwise from midnight at the top. Longer, warmer strokes = higher heart rate (${rg.lo}–${rg.hi} bpm). ${rg.n.toLocaleString()} minutes of data.`
+    : `Each ridge is a day (top = oldest), midnight to midnight. Height and colour = heart rate (${rg.lo}–${rg.hi} bpm). ${rg.n.toLocaleString()} minutes of data.`;
+}
+
+// Pulse the centre number at the latest heart rate (skipped with reduced motion).
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+let artT0 = performance.now();
+function artTick(now) {
+  if (art.data && art.last && !document.hidden) renderArt(((now - artT0) / 1000) * (art.last / 60) % 1);
+  setTimeout(() => requestAnimationFrame(artTick), 80);
+}
+
+async function loadArt() {
+  try {
+    art.data = await api("/api/heartart");
+    renderArt();
+    renderFun();
+    if (!reduceMotion && !art.ticking) { art.ticking = true; requestAnimationFrame(artTick); }
+  } catch (e) {
+    $("art-cap").textContent = `Art unavailable: ${e.message}`;
+  }
+}
+document.querySelectorAll("[data-art]").forEach((b) => b.addEventListener("click", () => {
+  art.style = b.dataset.art;
+  try { localStorage.setItem("fitbit.art", art.style); } catch {}
+  renderArt();
+}));
+$("art-save").addEventListener("click", () => {
+  const a = document.createElement("a");
+  a.download = `heartbeat-${art.style}-${new Date().toISOString().slice(0, 10)}.png`;
+  a.href = $("art").toDataURL("image/png");
+  a.click();
+});
+window.addEventListener("resize", () => { clearTimeout(art.rt); art.rt = setTimeout(() => renderArt(), 150); });
+
+
+// ---- Fun zone ----
+const STROKE_VOLUME_L = 0.07;   // ~70 ml per beat, typical adult at rest
+const WORK_PER_BEAT_J = 1.0;    // left-ventricle stroke work ~1 J per beat
+const PIZZA_KCAL = 2240;        // large 14" cheese pizza, 8 slices x ~280 kcal
+const MARATHON_KM = 42.195;
+function tempoGenre(b) {
+  if (b < 70) return "a slow ballad";
+  if (b < 90) return "hip-hop / R&B";
+  if (b < 110) return "a mid-tempo pop song";
+  if (b < 130) return "house music";
+  if (b < 150) return "drum-heavy rock";
+  return "drum & bass";
+}
+
+function renderFun() {
+  const box = $("facts");
+  if (!art.data || !box) return;
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const week = art.data.days.filter((d) => d.date < today);
+  let beats = 0, mins = 0, peak = { v: 0 }, calm = { v: 1e9 };
+  for (const d of week) d.bpm.forEach((v, m) => {
+    if (v == null) return;
+    beats += v; mins += 1;
+    if (v > peak.v) peak = { v, d: d.date, m };
+  });
+  for (const d of week) for (let h = 0; h < 24; h++) {
+    const seg = d.bpm.slice(h * 60, h * 60 + 60).filter((v) => v != null);
+    if (seg.length > 45) { const a = seg.reduce((x, y) => x + y, 0) / seg.length; if (a < calm.v) calm = { v: a, d: d.date, h }; }
+  }
+  const days = state.data?.days || [];
+  const km = days.reduce((a, d) => a + (d.distanceMm || 0), 0) / 1e6;
+  const kcal = days.reduce((a, d) => a + (d.calories || 0), 0);
+  const steps = days.reduce((a, d) => a + (d.steps || 0), 0);
+  const sleepMin = (state.data?.sleep || []).reduce((a, s) => a + (s.asleepMin || 0), 0);
+  const kg = ins.data?.inputs?.weightKg || 70;
+  const liters = beats * STROKE_VOLUME_L;
+  const liftM = (beats * WORK_PER_BEAT_J) / (kg * 9.80665);
+  const kwh = kcal * 0.001163;
+  const rest = ins.data?.inputs?.restingHr7 || (lastOf(days, "restingHr") || {}).restingHr;
+  const when = (d, m) => `${new Date(d + "T00:00:00").toLocaleDateString(undefined, { weekday: "short" })} ${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+  const facts = [
+    ["❤️", `${fmt(beats)}`, "heartbeats counted", `Across ${fmt(mins / 60)} measured hours this week, about ${fmt(beats / Math.max(1, mins) * 1440)} a day.`, "Σ per-minute bpm"],
+    ["🛁", `${fmt(liters)} L`, "of blood pumped", `That's ${fmt(liters / 150, 1)} bathtubs, using ~70 ml per beat.`, "beats × stroke volume"],
+    ["🏔️", `${fmt(liftM)} m`, "of lifting power", `Your heart's work this week could raise your whole body ${fmt(liftM)} m, about ${fmt(liftM / 8849, 2)}× Everest.`, "h = beats × 1 J ÷ (m·g)"],
+    ["🏃", `${fmt(km / MARATHON_KM, 2)}`, "marathons walked", `${fmt(km, 1)} km and ${fmt(steps)} steps in ${days.length} days (${fmt(km * 1000 / 400)} laps of a running track).`, "distance ÷ 42.195 km"],
+    ["🍕", `${fmt(kcal / PIZZA_KCAL, 1)}`, "large pizzas burned", `${fmt(kcal)} kcal over the range, the energy of ${fmt(kwh, 1)} kWh: a 10 W LED for ${fmt(kwh / 0.01 / 24)} days.`, "1 kcal = 1.163 Wh"],
+    ["😴", `${fmt(sleepMin / 1440, 1)} days`, "spent asleep", `${fmt(sleepMin / 60)} hours across ${(state.data?.sleep || []).length} sleeps in this range.`, "Σ minutes asleep"],
+    ["🥁", rest ? `${fmt(rest)} bpm` : "—", "resting tempo", rest ? `Your resting heart keeps the beat of ${tempoGenre(rest)}.` : "No resting HR yet.", "7-day resting HR"],
+    ["⚡", peak.v ? `${peak.v} bpm` : "—", "peak minute", peak.v ? `Your fastest minute this week: ${when(peak.d, peak.m)}.` : "", "max per-minute average"],
+    ["🧘", calm.v < 1e9 ? `${fmt(calm.v)} bpm` : "—", "calmest hour", calm.v < 1e9 ? `${new Date(calm.d + "T00:00:00").toLocaleDateString(undefined, { weekday: "long" })}, ${String(calm.h).padStart(2, "0")}:00–${String(calm.h + 1).padStart(2, "0")}:00.` : "", "lowest hourly average"],
+  ];
+  box.innerHTML = facts.map(([e, big, label, txt, how]) => `<div class="fact"><div class="big"><span class="em" aria-hidden="true">${e}</span>${big}</div><div class="txt"><b>${label}</b>. ${esc(txt)}</div><div class="how">${esc(how)}</div></div>`).join("");
+
+  const sel = $("play-day");
+  if (!sel.options.length) {
+    sel.innerHTML = art.data.days.filter((d) => d.bpm.some((v) => v != null)).map((d) =>
+      `<option value="${d.date}">${new Date(d.date + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}</option>`).join("");
+    sel.selectedIndex = Math.max(0, sel.options.length - 2);   // yesterday: a full day
+  }
+  if (!game.q) newGame();
+}
+
+// Web Audio: melody + heartbeat.
+let audio = { ctx: null, playing: false, beat: null };
+const actx = () => (audio.ctx ||= new (window.AudioContext || window.webkitAudioContext)());
+function thump(ctx, t, gain = 0.6, freq = 62) {
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = "sine"; o.frequency.setValueAtTime(freq * 1.6, t); o.frequency.exponentialRampToValueAtTime(freq, t + 0.08);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+  o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + 0.2);
+}
+function tone(ctx, t, freq, dur) {
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = "triangle"; o.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.18, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+const PENTA = [0, 2, 4, 7, 9];   // major pentatonic: every note sounds good together
+function bpmToFreq(b, lo, hi) {
+  const steps = 15, k = Math.round(Math.max(0, Math.min(1, (b - lo) / (hi - lo))) * (steps - 1));
+  const semis = Math.floor(k / 5) * 12 + PENTA[k % 5];
+  return 220 * 2 ** (semis / 12);
+}
+
+$("play-btn").addEventListener("click", () => {
+  if (audio.playing) { audio.playing = false; return; }
+  const day = art.data?.days.find((d) => d.date === $("play-day").value);
+  if (!day) return;
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();   // own context so Stop can't cut the pulse
+  audio.melody = ctx;
+  const buckets = [];
+  for (let i = 0; i < 144; i++) {
+    const seg = day.bpm.slice(i * 10, i * 10 + 10).filter((v) => v != null);
+    buckets.push(seg.length ? seg.reduce((a, b) => a + b, 0) / seg.length : null);
+  }
+  const vals = buckets.filter((v) => v != null), lo = Math.min(...vals), hi = Math.max(...vals);
+  const step = 0.2, t0 = ctx.currentTime + 0.1;
+  buckets.forEach((b, i) => { if (b != null) { tone(ctx, t0 + i * step, bpmToFreq(b, lo, hi), step * 1.4); if (i % 2 === 0) thump(ctx, t0 + i * step, 0.35); } });
+  audio.playing = true; audio.stopAt = t0 + buckets.length * step;
+  $("play-btn").textContent = "■ Stop";
+  const tick = () => {
+    const i = Math.floor((ctx.currentTime - t0) / step);
+    if (!audio.playing || i >= buckets.length) {
+      audio.playing = false;
+      ctx.close();
+      $("play-btn").textContent = "▶ Play day"; $("play-prog").style.width = "0"; $("play-now").textContent = "—";
+      return;
+    }
+    if (i >= 0) {
+      $("play-prog").style.width = `${(i / buckets.length) * 100}%`;
+      $("play-now").textContent = `${String(Math.floor(i / 6)).padStart(2, "0")}:${String((i % 6) * 10).padStart(2, "0")} · ${buckets[i] == null ? "no data" : fmt(buckets[i]) + " bpm"}`;
+    }
+    requestAnimationFrame(tick);
+  };
+  tick();
+});
+
+$("beat-btn").addEventListener("click", () => {
+  if (audio.beat) { clearInterval(audio.beat); audio.beat = null; $("beat-btn").textContent = "♥ Hear my pulse"; return; }
+  const bpm = live.data?.latest?.bpm || art.last || 72;
+  const ctx = actx(); ctx.resume();
+  const lubDub = () => { const t = ctx.currentTime + 0.02; thump(ctx, t, 0.7, 58); thump(ctx, t + 0.16, 0.45, 72); };
+  lubDub();
+  audio.beat = setInterval(lubDub, 60000 / bpm);
+  $("beat-btn").textContent = `■ Stop (${fmt(bpm)} bpm)`;
+});
+
+// Guess-the-heart-rate game.
+let game = { q: null, played: 0, total: 0 };
+function newGame() {
+  const days = (art.data?.days || []).filter((d) => d.bpm.some((v) => v != null));
+  if (!days.length) return;
+  for (let tries = 0; tries < 200; tries++) {
+    const d = days[Math.floor(Math.random() * days.length)], m = Math.floor(Math.random() * 1440);
+    if (d.bpm[m] != null) { game.q = { d: d.date, m, v: d.bpm[m] }; break; }
+  }
+  const { d, m } = game.q;
+  $("game-q").textContent = `${new Date(d + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })} at ${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+  $("game-ans").textContent = "";
+  $("game-go").disabled = false;
+}
+$("game-guess").addEventListener("input", (e) => { $("game-val").textContent = e.target.value; });
+$("game-go").addEventListener("click", () => {
+  if (!game.q) return;
+  const g = Number($("game-guess").value), off = Math.abs(g - game.q.v);
+  const pts = Math.max(0, 100 - off * 5);
+  game.played++; game.total += pts;
+  $("game-ans").innerHTML = `Actual: <b>${game.q.v} bpm</b>. You were ${off === 0 ? "spot on" : `${off} bpm ${g > game.q.v ? "high" : "low"}`}. +${pts} points ${off <= 3 ? "🎯" : off <= 10 ? "👏" : "🙃"}`;
+  $("game-score").textContent = `Score ${game.total} / ${game.played * 100}`;
+  $("game-go").disabled = true;
+});
+$("game-next").addEventListener("click", newGame);
+
+(async () => {
+  await unlock();
+  load();
+  loadLive();
+  loadInsights();
+  loadArt();
+})();
+</script>
+</body>
+</html>
