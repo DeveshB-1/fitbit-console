@@ -16,7 +16,7 @@ uv run dashboard.py --demo  # synthetic data, no credentials
 
 `.github/workflows/publish.yml` runs hourly (and on demand). It fetches your data with a
 refresh token stored in GitHub Actions secrets, encrypts everything with AES-256-GCM
-(PBKDF2-SHA256, 600k iterations) using `DASHBOARD_PASSWORD`, and publishes only the
+(PBKDF2-SHA256, 2M iterations) using `DASHBOARD_PASSWORD`, and publishes only the
 ciphertext plus the page. The browser decrypts it after you enter the password.
 
 Secrets: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN`, `DASHBOARD_PASSWORD`.

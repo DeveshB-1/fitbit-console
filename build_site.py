@@ -23,7 +23,7 @@ import dashboard
 import health_api
 import insights
 
-PBKDF2_ITERATIONS = 600_000
+PBKDF2_ITERATIONS = 2_000_000  # slows offline guessing; ~1 s to unlock in a browser
 ROOT = Path(__file__).parent
 
 
@@ -75,8 +75,8 @@ def main() -> None:
     parser.add_argument("--out", default="_site")
     args = parser.parse_args()
     password = os.environ.get("DASHBOARD_PASSWORD")
-    if not password or len(password) < 12:
-        sys.exit("Set DASHBOARD_PASSWORD (12+ characters).")
+    if not password or len(password) < 6:
+        sys.exit("Set DASHBOARD_PASSWORD (6+ characters; longer is much safer).")
 
     out = Path(args.out)
     shutil.rmtree(out, ignore_errors=True)
