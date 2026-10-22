@@ -75,8 +75,8 @@ def main() -> None:
     parser.add_argument("--out", default="_site")
     args = parser.parse_args()
     password = os.environ.get("DASHBOARD_PASSWORD")
-    if not password or len(password) < 6:
-        sys.exit("Set DASHBOARD_PASSWORD (6+ characters; longer is much safer).")
+    if not password or len(password) < 4:
+        sys.exit("Set DASHBOARD_PASSWORD (4+ characters; longer is much safer).")
 
     out = Path(args.out)
     shutil.rmtree(out, ignore_errors=True)
