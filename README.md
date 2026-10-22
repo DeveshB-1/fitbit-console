@@ -14,7 +14,7 @@ uv run dashboard.py --demo  # synthetic data, no credentials
 
 ## Hosted on GitHub Pages (encrypted)
 
-`.github/workflows/publish.yml` runs hourly (and on demand). It fetches your data with a
+`.github/workflows/publish.yml` runs every 15 minutes (and on demand). It fetches your data with a
 refresh token stored in GitHub Actions secrets, encrypts everything with AES-256-GCM
 (PBKDF2-SHA256, 2M iterations) using `DASHBOARD_PASSWORD`, and publishes only the
 ciphertext plus the page. The browser decrypts it after you enter the password.
