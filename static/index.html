@@ -208,6 +208,7 @@ th { color: var(--text-secondary); font-weight: 600; }
   <section class="card live" id="live" aria-live="polite">
     <div>
       <div class="live-head"><h2>Heart rate</h2><span class="pill" id="live-pill"><i></i><span>Loading</span></span></div>
+      <button class="btn" id="g-connect" hidden style="margin-top:10px">Connect Google for live heart rate</button>
       <div class="bpm-row">
         <svg class="heart stale" id="heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.6 1.1 4.3 2.4h2c.7-1.3 2.2-2.4 4.3-2.4 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21z"/></svg>
         <div class="bpm" id="bpm">—<small>bpm</small></div>
@@ -727,7 +728,8 @@ function renderLive() {
     heart.classList.toggle("stale", !fresh);
     pill.className = fresh ? "pill fresh" : "pill";
     pill.lastElementChild.textContent = fresh ? "Live" : "Waiting for sync";
-    $("live-meta").textContent = `Reading at ${clock(latest.t)} · ${ago(latest.t)}${fresh ? "" : " — open the Fitbit app to sync newer data"} · checked ${clock(d.fetchedAt)}`;
+    const via = d.direct ? "live from Google" : STATIC_FILE ? `from snapshot built ${clock(d.fetchedAt)}` : `checked ${clock(d.fetchedAt)}`;
+    $("live-meta").textContent = `Reading at ${clock(latest.t)} · ${ago(latest.t)}${fresh ? "" : " — open the Fitbit app on your phone to sync newer data"} · ${via}`;
     const v = d.samples.map((s) => s.bpm);
     $("live-stats").innerHTML = [["Min", Math.min(...v)], ["Avg", v.reduce((a, b) => a + b, 0) / v.length], ["Max", Math.max(...v)]]
       .map(([k, n]) => `<div>${k}<b>${fmt(n)}</b></div>`).join("");
@@ -738,7 +740,9 @@ function renderLive() {
 async function loadLive() {
   clearTimeout(live.timer);
   try {
-    live.data = await api("/api/heartrate", { hours: live.hours });
+    live.data = (await liveFromGoogle(live.hours).catch((e) => { console.warn(e); return null; }))
+      || await api("/api/heartrate", { hours: live.hours });
+    updateConnect();
     renderLive();
   } catch (e) {
     $("live-meta").textContent = `Could not load heart rate: ${e.message}`;
@@ -1131,6 +1135,82 @@ $("game-go").addEventListener("click", () => {
   $("game-go").disabled = true;
 });
 $("game-next").addEventListener("click", newGame);
+
+
+// ---- Hosted site: read heart rate straight from Google in the browser ----
+// The snapshot is rebuilt on GitHub's schedule (best-effort, often hours apart); signing in here
+// lets the heart-rate card poll the Google Health API directly every 30 s.
+const WEB_CLIENT_ID = window.FITBIT_WEB_CLIENT_ID || null;
+const HR_SCOPES = ["activity_and_fitness", "health_metrics_and_measurements"]
+  .map((s) => `https://www.googleapis.com/auth/googlehealth.${s}.readonly`).join(" ");
+let gauth = { token: null, exp: 0, client: null };
+try { const t = JSON.parse(sessionStorage.getItem("fitbit.gtoken") || "null"); if (t && t.exp > Date.now() + 60e3) Object.assign(gauth, t); } catch {}
+
+function loadGis() {
+  return new Promise((resolve, reject) => {
+    if (window.google?.accounts?.oauth2) return resolve();
+    const s = document.createElement("script");
+    s.src = "https://accounts.google.com/gsi/client";
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error("Couldn't load Google sign-in"));
+    document.head.appendChild(s);
+  });
+}
+
+function connectGoogle() {
+  // Must run inside the click handler so the browser allows Google's popup.
+  if (!gauth.client) {
+    gauth.client = google.accounts.oauth2.initTokenClient({
+      client_id: WEB_CLIENT_ID,
+      scope: HR_SCOPES,
+      callback: (resp) => {
+        if (resp.error) { $("live-meta").textContent = `Google sign-in failed: ${resp.error}`; return; }
+        gauth.token = resp.access_token;
+        gauth.exp = Date.now() + Number(resp.expires_in || 3600) * 1000;
+        try { sessionStorage.setItem("fitbit.gtoken", JSON.stringify({ token: gauth.token, exp: gauth.exp })); } catch {}
+        loadLive();
+      },
+      error_callback: (err) => { $("live-meta").textContent = `Google sign-in closed (${err.type}).`; },
+    });
+  }
+  gauth.client.requestAccessToken({ prompt: "" });
+}
+
+function updateConnect() {
+  const btn = $("g-connect");
+  if (!btn) return;
+  const show = !!(STATIC_FILE && WEB_CLIENT_ID) && !(gauth.token && gauth.exp > Date.now() + 60e3);
+  btn.hidden = !show;
+  btn.textContent = gauth.exp ? "Reconnect Google (session expired)" : "Connect Google for live heart rate";
+}
+
+async function liveFromGoogle(hours) {
+  if (!STATIC_FILE || !WEB_CLIENT_ID || !gauth.token || gauth.exp < Date.now() + 60e3) return null;
+  const since = new Date(Date.now() - hours * 3600e3).toISOString().replace(/\.\d+Z$/, "Z");
+  const samples = [];
+  let pageToken = "";
+  do {
+    const q = new URLSearchParams({ filter: `heart_rate.sample_time.physical_time >= "${since}"`, pageSize: "10000" });
+    if (pageToken) q.set("pageToken", pageToken);
+    const res = await fetch(`https://health.googleapis.com/v4/users/me/dataTypes/heart-rate/dataPoints?${q}`,
+      { headers: { Authorization: `Bearer ${gauth.token}` } });
+    if (res.status === 401 || res.status === 403) {
+      gauth.token = null;
+      try { sessionStorage.removeItem("fitbit.gtoken"); } catch {}
+      return null;
+    }
+    if (!res.ok) throw new Error(`Google API ${res.status}`);
+    const body = await res.json();
+    for (const p of body.dataPoints || [])
+      if (p.heartRate) samples.push({ t: p.heartRate.sampleTime.physicalTime, bpm: Number(p.heartRate.beatsPerMinute) });
+    pageToken = body.nextPageToken || "";
+  } while (pageToken);
+  samples.sort((a, b) => (a.t < b.t ? -1 : 1));
+  return { hours, samples, latest: samples.at(-1) || null, fetchedAt: new Date().toISOString(), direct: true };
+}
+
+$("g-connect").addEventListener("click", connectGoogle);
+if (STATIC_FILE && WEB_CLIENT_ID) loadGis().catch((e) => console.warn(e));   // preload so the click opens the popup instantly
 
 (async () => {
   await unlock();

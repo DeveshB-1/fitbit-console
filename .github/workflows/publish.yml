@@ -31,6 +31,7 @@ jobs:
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
           DASHBOARD_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
           FITBIT_SEX: ${{ vars.FITBIT_SEX }}
+          GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
         run: uv run build_site.py --out _site
       - uses: actions/upload-pages-artifact@v3
         with:

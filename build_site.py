@@ -87,7 +87,9 @@ def main() -> None:
         sys.exit(str(e))
     (out / "data.enc.json").write_text(json.dumps(encrypt(data, password)))
     html = (ROOT / "static" / "index.html").read_text()
-    html = html.replace("<script>", '<script>window.FITBIT_STATIC = "data.enc.json";</script>\n<script>', 1)
+    web_client = os.environ.get("GOOGLE_WEB_CLIENT_ID", "")
+    inject = f'<script>window.FITBIT_STATIC = "data.enc.json"; window.FITBIT_WEB_CLIENT_ID = {json.dumps(web_client or None)};</script>'
+    html = html.replace("<script>", inject + "\n<script>", 1)
     (out / "index.html").write_text(html)
     (out / ".nojekyll").write_text("")
     errors = {k: v for n in data["dashboard"].values() for k, v in n["errors"].items()}
